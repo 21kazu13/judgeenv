@@ -8,10 +8,10 @@ RUN ln -s -f /usr/share/zoneinfo/$TZ /etc/localtime
 RUN echo $TZ | tee /etc/timezone >/dev/null
 ENV TZ=$TZ
 
-RUN apt update
+RUN apt update \
 # git : ac-library-pythonのインストールなどに使う
 # wget, bzip2 : バイナリのDLと展開に必要
-RUN apt install -y \
+    && apt install -y --no-install-recommends \
         git wget bzip2 \
         gcc g++ gfortran libopenblas-dev liblapack-dev pkg-config libgeos-dev \
         # python3 and build-essential is required for cppyy installation
@@ -42,17 +42,38 @@ RUN TARGETPYPY=$( \
     wget https://downloads.python.org/pypy/pypy3.10-v7.3.12-${TARGETPYPY}.tar.bz2 \
     && tar -xvf pypy3.10-v7.3.12-${TARGETPYPY}.tar.bz2 -C /usr/local \
     && ln -s /usr/local/pypy3.10-v7.3.12-${TARGETPYPY}/bin/pypy3 /usr/local/bin/pypy3 \
+    && ln -s /usr/local/pypy3.10-v7.3.12-${TARGETPYPY}/bin/pypy /usr/local/bin/pypy \
     && wget https://bootstrap.pypa.io/get-pip.py \
-    && pypy3 get-pip.py --break-system-packages
+    && pypy3 get-pip.py --break-system-packages 
 
-ENV PATH=$PATH:/usr/local/pypy3.10-v7.3.12-aarch64/bin
-
-RUN pypy3 -m pip install --break-system-packages --no-cache\
+RUN pypy -m pip install -U setuptools wheel \
+    pypy -m pip wheel -w /tmp/wheels\
     numpy==1.24.1 \
     scipy==1.10.1 \
     networkx==3.0 \
     sympy==1.11.1 \
-    sortedcontainers==2.4.0  \
+    sortedcontainers==2.4.0 \
+    more-itertools==9.0.0 \
+    shapely==2.0.0 \
+    bitarray==2.6.2 \
+    PuLP==2.7.0 \
+    mpmath==1.2.1 \
+    pandas==1.5.2 \
+    z3-solver==4.12.1.0 \
+    scikit-learn==1.3.0 \
+    typing-extensions==4.4.0 \
+    cppyy==2.4.1 \
+    git+https://github.com/not522/ac-library-python \
+    online-judge-tools==11.5.1
+
+ENV PATH=$PATH:/usr/local/pypy3.10-v7.3.12-aarch64/bin
+
+RUN pypy3 -m pip install --break-system-packages --no-cache \
+    numpy==1.24.1 \
+    scipy==1.10.1 \
+    networkx==3.0 \
+    sympy==1.11.1 \
+    sortedcontainers==2.4.0 \
     more-itertools==9.0.0 \
     shapely==2.0.0 \
     bitarray==2.6.2 \
