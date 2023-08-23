@@ -1,7 +1,8 @@
 FROM python:3.11.4 as builder-python
 
 WORKDIR /tmp
-COPY req_python.txt .
+COPY req_python-x86_64.txt .
+COPY req_python-arm64.txt .
 
 RUN apt update \
     && apt install -y \
@@ -11,7 +12,7 @@ RUN apt update \
         zlib1g-dev 
 
 RUN python -m pip install -U setuptools==66.0.0 wheel \
-    && python -m pip wheel -w /tmp/wheels -r req_python.txt
+    && python -m pip wheel -w /tmp/wheels -r req_python-$(uname -m).txt
 
 FROM pypy:3.10-7.3.12 as builder-pypy
 
@@ -137,8 +138,45 @@ RUN acc config default-template py \
 #     && git config --global user.email $GITEMAIL
 
 # test
-RUN python -c 'import cppyy, numpy, scipy, networkx, sympy, sortedcontainers, more_itertools, shapely, bitarray, pulp, mpmath, pandas, z3, sklearn, ortools, torch, polars, lightgbm, gmpy2, numba, atcoder' \
-    && pypy -c 'import cppyy, numpy, scipy, networkx, sympy, sortedcontainers, more_itertools, shapely, bitarray, pulp, mpmath, pandas, z3, sklearn, typing_extensions, atcoder' \
+RUN python -c 'import \
+                    cppyy, \
+                    numpy, \
+                    scipy, \
+                    networkx, \
+                    sympy, \
+                    sortedcontainers, \
+                    more_itertools, \
+                    shapely, \
+                    bitarray, \
+                    pulp, \
+                    mpmath, \
+                    pandas, \
+                    z3, \
+                    sklearn, \
+                    ortools, \
+                    torch, \
+                    polars, \
+                    lightgbm, \
+                    gmpy2, \
+                    numba, \
+                    atcoder' \
+    && pypy -c 'import \
+                    cppyy, \
+                    numpy, \
+                    scipy, \
+                    networkx, \
+                    sympy, \
+                    sortedcontainers, \
+                    more_itertools, \
+                    shapely, \
+                    bitarray, \
+                    pulp, \
+                    mpmath, \
+                    pandas, \
+                    z3, \
+                    sklearn, \
+                    typing_extensions, \
+                    atcoder' \
     && oj --help \
     && acc config \
     && acc check-oj
