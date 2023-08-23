@@ -1,11 +1,14 @@
 FROM python:3.11.4 as builder-python
 
 WORKDIR /tmp
-COPY req_python-x86_64.txt .
-COPY req_python-arm64.txt .
+COPY req_python*.txt .
 
 RUN apt update \
     && apt install -y \
+        #23 5092.4   ERROR: Failed building wheel for gmpy2
+        #23 5092.4       src/gmpy2.h:82:10: fatal error: mpfr.h: No such file or directory
+        #23 5092.4          82 | #include <mpfr.h>        
+        libmpfr-dev \
         # required from build of online-judge-tools (lxml)
         libxml2-dev \
         libxslt-dev \
