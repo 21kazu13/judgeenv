@@ -1,0 +1,68 @@
+# Declear common argument among multi stages
+# https://qiita.com/ktooi/items/9c12802deb52eccf0858
+ARG CERT_PATH=/etc/ssl/certs/ca-certificates.crt
+ARG CERT_DIR=/etc/ssl/certs/
+
+###############################################################
+### Create and prepare self signed certificate for netscope ###
+###############################################################
+# Install first, then copy and use /etc/ssl/certs/ca-certificates.crt into other stages
+# https://stakiran.hatenablog.com/entry/2018/06/12/213727
+# http://www.maibun.org/~nt/technicalnote/centos8/ssl4.html
+# https://qiita.com/kusanoiskuzuno/items/cf35b65a3c42c11be67c
+# https://qiita.com/hi-naoya/items/d325a57d24a39e4d03e8
+FROM ubuntu:22.10 as cert
+COPY nscacert.pem /usr/share/ca-certificates/extra/
+RUN if [ -e /usr/share/ca-certificates/extra/nscacert.pem ]; then \
+        apt update && \
+        apt-get install -y ca-certificates && \
+        # update-ca-certificates will fail without this.
+        # http://www.maibun.org/~nt/technicalnote/centos8/ssl4.html
+        echo 'extra/nscacert.pem' >> /etc/ca-certificates.conf ; \
+    fi
+# TODO
+# Investigate whether this should be separated or not 
+RUN update-ca-certificates
+
+#################################
+### Build pypy3.10 pip wheels ###
+#################################
+FROM pypy:3.10-7.3.12 as builder-pypy
+
+RUN apt update \
+    && apt install -y --no-install-recommends \
+        # ../../meson.build:63:0: ERROR: Unknown compiler(s): [['gfortran'], ['flang'], ['nvfortran'], ['pgfortran'], ['ifort'], ['ifx'], ['g95']]
+        gfortran \
+        # ../../scipy/meson.build:134:7: ERROR: Dependency "OpenBLAS" not found, tried pkgconfig
+        # https://qiita.com/itotomball/items/3ec9eddbe0f6cbab66ad
+        libopenblas-dev \
+        # src/geos.h:15:10: fatal error: geos_c.h: No such file or directory
+        # https://techoverflow.net/2021/08/13/6348/
+        libgeos-dev
+
+WORKDIR /tmp
+COPY req_pypy.txt .
+
+# copy cert and set environment valuables for pip
+ARG CERT_PATH
+ARG CERT_DIR
+COPY --from=cert $CERT_PATH $CERT_PATH
+ENV CERT_PATH=${CERT_PATH}
+ENV SSL_CERT_FILE=${CERT_PATH}
+ENV REQUESTS_CA_BUNDLE=${CERT_PATH}
+ENV CERT_DIR=${CERT_DIR}
+ENV SSL_CERT_DIR=${CERT_DIR}
+
+RUN pypy -m pip install -U setuptools==66.0.0 wheel \
+    && pypy -m pip wheel -w /tmp/wheels -r req_pypy.txt --verbose
+# unlink pypy3.10 from "python" because python is used by python3.11.4
+RUN unlink /opt/pypy/bin/python \
+    && unlink /opt/pypy/bin/python3 \
+    && unlink /opt/pypy/bin/python3.10
+# Current pip version and z3-solver is not supported aarch64 wheels (just file name issue?)
+# https://oregengo.hatenablog.com/entry/2016/12/20/175835
+# from pip._internal.utils.compatibility_tags import get_supported
+# RUN UNAME=$(uname -m) \
+#     && case ${UNAME} in \
+#         aarch64 ) mv wheels/z3_solver-4.12.1.0-py2.py3-none-manylinux1_aarch64.whl wheels/z3_solver-4.12.1.0-py2.py3-none-linux_aarch64.whl;; \
+#     esac
