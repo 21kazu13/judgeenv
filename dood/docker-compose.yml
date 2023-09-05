@@ -1,0 +1,14 @@
+version: "3.3"
+services:
+  dood:
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - TZ=Asia/Tokyo
+    image: test_dood
+    volumes:
+      - type: bind
+        source: "/var/run/docker.sock"
+        target: "/var/run/docker.sock"
