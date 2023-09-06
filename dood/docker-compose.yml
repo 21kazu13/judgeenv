@@ -12,3 +12,16 @@ services:
       - type: bind
         source: "/var/run/docker.sock"
         target: "/var/run/docker.sock"
+      - type: volume
+        source: "atcoder"
+        target: "/tmp/work"
+
+# create permanent volume
+# https://zenn.dev/ajapa/articles/1369a3c0e8085d
+# https://docs.docker.jp/v1.12/compose/compose-file.html#volumes-volume-driver
+# https://qiita.com/gounx2/items/23b0dc8b8b95cc629f32
+# https://qiita.com/aki_55p/items/63c47214cab7bcb027e0
+# https://qiita.com/ymktmk/items/d32f696070490d90d218
+volumes:
+    atcoder:
+        external: true
