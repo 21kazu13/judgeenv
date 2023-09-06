@@ -16,6 +16,9 @@ services:
         source: "atcoder"
         target: "/tmp/work"
 
+# memo: 下記で全体マウントして今のディレクトリでコマンド走らせられる
+# docker run --rm -it --mount type=volume,src=atcoder,dst=/shared -w /shared/$(basename $(pwd)) ubuntu:22.10 bash
+
 # create permanent volume
 # https://zenn.dev/ajapa/articles/1369a3c0e8085d
 # https://docs.docker.jp/v1.12/compose/compose-file.html#volumes-volume-driver
